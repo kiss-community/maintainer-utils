@@ -1,0 +1,77 @@
+#!/bin/sh
+
+set -eu
+
+REPO="$(realpath $(dirname "$0")/repo)"
+
+prompt() {
+	i=0
+
+	for item; do
+		echo "$i: $item" >&2
+		: $((i+=1))
+	done
+
+	read -r choice < /dev/tty || return 1
+	seq="$(seq "$choice")" || return 1
+
+	for _ in $seq; do
+		shift
+	done
+
+	echo "$1"
+}
+
+mkdir -p "$REPO"
+
+[ -f "$REPO/.outdated" ] || {
+	if [ -f "$1" ]; then
+		cp -f "$1" "$REPO/.outdated"
+	else
+		kiss outdated "$REPO" > "$REPO/.outdated"
+	fi
+
+	while read -r pkg; do
+		dir="$(kiss search "$pkg" | head -n1)" || continue
+		cp -LR "$dir" "$REPO/"
+	done
+}
+
+[ -f "$REPO/.outdated" ] && {
+	echo "Ctrl + D to skip selection"
+
+	read -r _ < /dev/tty && while read -r pkg _ _ new_vers; do
+		[ -d "$REPO/$pkg" ] || continue
+		[ "$new_vers" ] || continue
+
+		{ IFS=", "; set -- $new_vers; unset IFS; }
+
+		read -r old_ver _ < "$REPO/$pkg/version"
+
+		echo "Upgrading $pkg ($old_ver)"
+
+		final="$(prompt "$@")" || {
+			echo "Selection cancelled for $pkg" >&2
+			continue
+		}
+
+		echo "$final 1" > "$REPO/$pkg/version"
+
+		sed "s|$old_ver|$final|g" "$REPO/$pkg/sources" > _
+		mv -f _ "$REPO/$pkg/sources"
+	done < "$REPO/.outdated"
+}
+
+for pkg in "$REPO/"*/; do
+	(
+		cd "$pkg"
+		kiss checksum
+
+		pkg="$(basename "$PWD")"
+
+		[ -f "$REPO/$pkg.success" ] || {
+			KISS_PROMPT=0 kiss build
+			:> "$REPO/$pkg.success"
+		}
+	)
+done
