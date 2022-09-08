@@ -24,6 +24,8 @@ env -i bwrap \
 	--tmpfs / \
 	--unshare-all \
 	--share-net \
+	--dev /dev \
+	--proc /proc \
 	--ro-bind "$KISS_CBUILD_ROOTFS" /rootfs.tar \
 	--bind "$KISS_CBUILD_SRCCACHE" /.cache/kiss/sources \
 	--bind "$KISS_CBUILD_BINCACHE" /.cache/kiss/bin \
