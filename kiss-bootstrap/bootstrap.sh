@@ -104,7 +104,14 @@ set +e
 		export PATH="$TMPDIR/$STAGE1/bin:$PATH"
 
 		cd "$DUMMY_PACKAGE_DIR"
-		KISS_PROMPT=0 kiss build
+		KISS_PROMPT=0 \
+		LOGNAME=root \
+			bwrap \
+        		--bind / / \
+        		--dev /dev \
+        		--uid 0 \
+        		--gid 0 \
+				kiss build
 	)
 
 	# Rebuild using libraries and toolchain built above
@@ -134,7 +141,13 @@ EOF
 		CFLAGS="$CFLAGS --sysroot=$TMPDIR/$STAGE1" \
 		CXXFLAGS="$CXXFLAGS --sysroot=$TMPDIR/$STAGE1" \
 		KISS_PROMPT=0 \
-			kiss build
+		LOGNAME=root \
+			bwrap \
+				--bind / / \
+				--dev /dev \
+				--uid 0 \
+				--gid 0 \
+				kiss build
 	)
 
 	rm -rf "${TMPDIR:?}/$STAGE1"
