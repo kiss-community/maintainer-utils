@@ -9,8 +9,8 @@ get_depends() {
 
 	[ -f "$DEPFILE" ] || return
 
-	while read -r dep _; do
-    	get_depends "$dep"
+	while read -r dep deptype; do
+    	[ ! "$deptype" = "make" ] && get_depends "$dep"
     done < "$DEPFILE"
 }
 
