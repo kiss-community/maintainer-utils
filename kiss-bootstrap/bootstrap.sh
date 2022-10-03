@@ -169,6 +169,7 @@ EOF
 		--bind "$XDG_CACHE_HOME" "$XDG_CACHE_HOME" \
 		--ro-bind "$srcdir_real" "$XDG_CACHE_HOME/kiss/sources" \
 		--ro-bind "$BASEDIR/rebuild.sh" /tmp/rebuild.sh \
+		--ro-bind "$DUMMY_PACKAGE_DIR/depends" /tmp/depends \
 		--ro-bind /etc/resolv.conf /etc/resolv.conf \
 		--uid 0 \
 		--gid 0 \
