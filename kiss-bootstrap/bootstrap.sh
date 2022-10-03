@@ -80,6 +80,8 @@ set +e
 	echo "Ctrl + C to cancel building"
 	read -r _
 
+	BWRAP="$(command -v bwrap)"
+
 	mkdir -p "$TMPDIR/$STAGE1"
 	mkdir -p "$TMPDIR/$STAGE2"
 
@@ -106,7 +108,7 @@ set +e
 		cd "$DUMMY_PACKAGE_DIR"
 		KISS_PROMPT=0 \
 		LOGNAME=root \
-			bwrap \
+			$BWRAP \
         		--bind / / \
         		--dev /dev \
         		--uid 0 \
@@ -142,7 +144,7 @@ EOF
 		CXXFLAGS="$CXXFLAGS --sysroot=$TMPDIR/$STAGE1" \
 		KISS_PROMPT=0 \
 		LOGNAME=root \
-			bwrap \
+			$BWRAP \
 				--bind / / \
 				--dev /dev \
 				--uid 0 \
@@ -158,7 +160,7 @@ EOF
 	rm -f "$XDG_CACHE_HOME/kiss/sources"
 	# Rebuild stage2 using itself
 	# /etc/resolv.conf is mounted for openssl's post-install
-	bwrap \
+	$BWRAP \
 		--bind "$TMPDIR/$STAGE2" / \
 		--dev /dev \
 		--proc /proc \
