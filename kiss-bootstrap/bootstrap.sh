@@ -12,7 +12,7 @@ set -eu
 : "${KBOOTSTRAP_CXXFLAGS:=-march=x86-64 -mtune=generic -pipe -Os}"
 : "${KBOOTSTRAP_MAKEFLAGS:=-j$(nproc)}"
 
-for cmd in kiss bwrap; do
+for cmd in kiss bwrap unshare; do
 	command -v "$cmd" >/dev/null || {
 		echo "Command '$cmd' not found!" >&2
 		exit 1
@@ -106,14 +106,8 @@ set +e
 		export PATH="$TMPDIR/$STAGE1/bin:$PATH"
 
 		cd "$DUMMY_PACKAGE_DIR"
-		KISS_PROMPT=0 \
-		LOGNAME=root \
-			$BWRAP \
-        		--bind / / \
-        		--dev /dev \
-        		--uid 0 \
-        		--gid 0 \
-				kiss build
+		LOGNAME=root KISS_PROMPT=0 \
+			unshare -r kiss build
 	)
 
 	# Rebuild using libraries and toolchain built above
@@ -142,14 +136,8 @@ EOF
 
 		CFLAGS="$CFLAGS --sysroot=$TMPDIR/$STAGE1" \
 		CXXFLAGS="$CXXFLAGS --sysroot=$TMPDIR/$STAGE1" \
-		KISS_PROMPT=0 \
-		LOGNAME=root \
-			$BWRAP \
-				--bind / / \
-				--dev /dev \
-				--uid 0 \
-				--gid 0 \
-				kiss build
+		LOGNAME=root KISS_PROMPT=0 \
+			unshare -r kiss build
 	)
 
 	rm -rf "${TMPDIR:?}/$STAGE1"
@@ -193,13 +181,7 @@ EOF
 
 	rm -f "$TMPDIR/$STAGE2/etc/resolv.conf"
 
-	bwrap \
-		--uid 0 \
-		--gid 0 \
-		--bind / / \
-		--chdir "$TMPDIR/$STAGE2" \
-		tar cf "$OUTFILE" .
-
+	unshare -r tar cf "$OUTFILE" . -C "$TMPDIR/$STAGE2"
 	echo "Successfully built tarball at '$OUTFILE'"
 )
 
