@@ -147,7 +147,6 @@ EOF
 	srcdir_real="$(realpath "$XDG_CACHE_HOME/kiss/sources")"
 	rm -f "$XDG_CACHE_HOME/kiss/sources"
 	# Rebuild stage2 using itself
-	# /etc/resolv.conf is mounted for openssl's post-install
 	$BWRAP \
 		--bind "$TMPDIR/$STAGE2" / \
 		--dev /dev \
@@ -158,7 +157,6 @@ EOF
 		--ro-bind "$srcdir_real" "$XDG_CACHE_HOME/kiss/sources" \
 		--ro-bind "$BASEDIR/rebuild.sh" /tmp/rebuild.sh \
 		--ro-bind "$DUMMY_PACKAGE_DIR/depends" /tmp/depends \
-		--ro-bind /etc/resolv.conf /etc/resolv.conf \
 		--uid 0 \
 		--gid 0 \
 		--die-with-parent \
@@ -178,8 +176,6 @@ EOF
 			XDG_CACHE_HOME="$XDG_CACHE_HOME" \
 			PATH="/usr/bin" \
 			/bin/sh /tmp/rebuild.sh
-
-	rm -f "$TMPDIR/$STAGE2/etc/resolv.conf"
 
 	unshare -r tar cf "$OUTFILE" . -C "$TMPDIR/$STAGE2"
 	echo "Successfully built tarball at '$OUTFILE'"
