@@ -1,8 +1,13 @@
 #!/bin/sh
 
+# arg1: update (prompt for pkg versions) | checksum (run checksum) | check (run build)
+# arg2: path to repo
+# Reads output of kiss-outdated for the passed repo from stdin
+
 set -eu
 
-REPO="$(realpath $(dirname "$0")/repo)"
+BASEDIR="${0%/*}"
+UPDATED="$BASEDIR/updated"
 
 prompt() {
 	i=0
@@ -13,7 +18,14 @@ prompt() {
 	done
 
 	read -r choice < /dev/tty || return 1
-	seq="$(seq "$choice")" || return 1
+	seq="$(seq "$choice" 2>/dev/null)" || {
+		printf '%s\n' "Invalid choice, enter new version string" >&2
+
+		read -r choice < /dev/tty || return 1
+
+		echo "$choice"
+		return
+	}
 
 	for _ in $seq; do
 		shift
@@ -22,56 +34,67 @@ prompt() {
 	echo "$1"
 }
 
-mkdir -p "$REPO"
+update() {
+	repo="$1"
 
-[ -f "$REPO/.outdated" ] || {
-	if [ -f "$1" ]; then
-		cp -f "$1" "$REPO/.outdated"
-	else
-		kiss outdated "$REPO" > "$REPO/.outdated"
-	fi
-
-	while read -r pkg; do
-		dir="$(kiss search "$pkg" | head -n1)" || continue
-		cp -LR "$dir" "$REPO/"
-	done
-}
-
-[ -f "$REPO/.outdated" ] && {
-	echo "Ctrl + D to skip selection"
-
-	read -r _ < /dev/tty && while read -r pkg _ _ new_vers; do
-		[ -d "$REPO/$pkg" ] || continue
+	while read -r pkg _ _ new_vers; do
+		[ -d "$repo/$pkg" ] || continue
 		[ "$new_vers" ] || continue
 
 		{ IFS=", "; set -- $new_vers; unset IFS; }
 
-		read -r old_ver _ < "$REPO/$pkg/version"
+		read -r old_ver _ < "$repo/$pkg/version"
 
-		echo "Upgrading $pkg ($old_ver)"
+		printf '\n%s\n\n' "Updating $pkg ($old_ver)"
 
 		final="$(prompt "$@")" || {
-			echo "Selection cancelled for $pkg" >&2
+			printf '\n%s\n' "Selection cancelled for $pkg" >&2
 			continue
 		}
 
-		echo "$final 1" > "$REPO/$pkg/version"
+		cp -R "$repo/$pkg" "$UPDATED/$pkg"
 
-		sed "s|$old_ver|$final|g" "$REPO/$pkg/sources" > _
-		mv -f _ "$REPO/$pkg/sources"
-	done < "$REPO/.outdated"
+		echo "$final 1" > "$UPDATED/$pkg/version"
+		sed "s|$old_ver|$final|g" "$UPDATED/$pkg/sources" > _
+
+		mv -f _ "$UPDATED/$pkg/sources"
+	done
 }
 
-for pkg in "$REPO/"*/; do
-	(
-		cd "$pkg"
-		kiss checksum
+checksum() {
+	for pkg in *; do
+		(
+			cd "$pkg"
+			kiss checksum
+		)
+	done
+}
 
-		pkg="$(basename "$PWD")"
+check() {
+	for pkg in *; do
+		(
+			cd "$pkg"
+			pkg="${PWD%/*}"
 
-		[ -f "$REPO/$pkg.success" ] || {
+			[ -f "../.$pkg.success" ] && return
+
 			KISS_PROMPT=0 kiss build
-			:> "$REPO/$pkg.success"
-		}
-	)
-done
+			:> "$UPDATED/.$pkg.success"
+		)
+	done
+}
+
+if [ "$1" = "update" ]; then
+	rm -rf "$UPDATED"
+	mkdir -p "$UPDATED"
+
+	update "$2"
+elif [ "$1" = "checksum" ]; then
+	cd "$UPDATED"
+
+	checksum
+elif [ "$1" = "check" ]; then
+	cd "$UPDATED"
+
+	check
+fi
