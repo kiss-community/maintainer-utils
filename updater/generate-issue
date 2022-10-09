@@ -1,0 +1,31 @@
+#!/bin/sh
+
+set -eu
+
+TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR"' INT
+
+cd "$1"
+
+while read -r pkg update; do
+    [ -d "$pkg" ] || {
+		echo "Package '$pkg' not found!" >&2
+        continue
+    }
+
+    name="$(git log -n1 --format='%an' "$pkg")"
+    email="$(git log -n1 --format='%ae' "$pkg")"
+
+    hash="$(echo "$email" | sha1sum | awk '{print $1}')"
+
+    mkdir -p "$TMPDIR/$hash"
+    echo "$name" > "$TMPDIR/$hash/name"
+
+    echo "- [ ] $pkg: $update" >> "$TMPDIR/$hash/out"
+done
+
+for hashed in "$TMPDIR"/*; do
+    printf '%s\n\n' "#### $(cat "$hashed/name")" "$(cat "$hashed/out")"
+done
+
+rm -rf "$TMPDIR"
