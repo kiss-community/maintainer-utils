@@ -74,12 +74,12 @@ check() {
 	for pkg in *; do
 		(
 			cd "$pkg"
-			pkg="${PWD%/*}"
+			pkg="${PWD##*/}"
 
 			[ -f "../.$pkg.success" ] && return
 
 			KISS_PROMPT=0 kiss build
-			:> "$UPDATED/.$pkg.success"
+			:> "../.$pkg.success"
 		)
 	done
 }
