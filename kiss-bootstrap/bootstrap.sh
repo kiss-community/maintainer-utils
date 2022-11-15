@@ -116,7 +116,7 @@ set +e
 		# shellcheck disable=2031
 		export LD_LIBRARY_PATH="$TMPDIR/$STAGE2/lib:$TMPDIR/$STAGE1/lib"
 		# shellcheck disable=2031
-		export PATH="$TMPDIR/$STAGE2/bin:$TMPDIR/$STAGE1/bin"
+		export PATH="$TMPDIR/$STAGE2/bin:$TMPDIR/$STAGE1/bin:/usr/bin"
 
 		cmd_path="$(realpath "$(command -v cc)")"
 		cmd_expected="$(realpath "$TMPDIR/$STAGE1/bin/cc")"
