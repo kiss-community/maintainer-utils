@@ -28,6 +28,7 @@ TMPDIR="$(mktemp -d)"
 STAGE1="stage1"
 STAGE2="stage2"
 DUMMY_PACKAGE_DIR="$TMPDIR/repo/__dummy-bootstrap"
+CHROOT_HACK_PATH="$TMPDIR/chroot_path"
 
 trap 'rm -rf "$TMPDIR"' INT
 
@@ -84,6 +85,9 @@ set +e
 
 	mkdir -p "$TMPDIR/$STAGE1"
 	mkdir -p "$TMPDIR/$STAGE2"
+
+	mkdir "$CHROOT_HACK_PATH"
+	cp "$BASEDIR/chroot-hack" "$CHROOT_HACK_PATH/chroot"
 
 	kiss new "$DUMMY_PACKAGE_DIR" 1
 
@@ -174,7 +178,7 @@ EOF
 			CXXFLAGS="$CXXFLAGS" \
 			MAKEFLAGS="$MAKEFLAGS" \
 			XDG_CACHE_HOME="$XDG_CACHE_HOME" \
-			PATH="/usr/bin" \
+			PATH="$CHROOT_HACK_PATH:/usr/bin" \
 			/bin/sh /tmp/rebuild.sh
 
 	unshare -r tar cf "$OUTFILE" . -C "$TMPDIR/$STAGE2"
