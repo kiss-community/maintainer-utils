@@ -31,13 +31,13 @@ Allows auto-updating packages by parsing the output of `kiss outdated`. Usage:
 ```sh
 cd updater
 
-# Get package versions from repology
-
-kiss outdated > outdated
 
 REPO="$HOME/KISS/community/community"
 
-# Prompts for updating packages in $REPO
+# Get package versions from repology
+kiss outdated "$REPO" > outdated
+
+# Prompts for updating packages in $REPO. Press RET or Enter to actually update when prompted.
 ./update update "$REPO" < outdated
 
 # The updated packages are copied to ./updated
